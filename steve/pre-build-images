@@ -100,7 +100,7 @@ oc new-app -f ./config/app/userprofile-build.yaml \
 # This extra app takes a long time to build! 
 # Start the build:
 oc get istag userprofile:1.0 || oc start-build userprofile-1.0 
-oc logs bc/userprofile-1.0 -f
+oc logs bc/userprofile-1.0 -f  # was getting log streaming errors if using -F above
 
 # verify image 
 oc get is userprofile -oname | grep "imagestream.image.openshift.io/userprofile"
@@ -135,7 +135,7 @@ oc new-app -f ./config/app/userprofile-build.yaml \
 
 # Start the build:
 oc get istag userprofile:2.0 || oc start-build userprofile-2.0 
-oc logs bc/userprofile-2.0 -f
+oc logs bc/userprofile-2.0 -f  # was getting log streaming errors if using -F above
 
 # Verify the image was created:
 oc describe is userprofile | grep -e ^2.0 
@@ -152,7 +152,7 @@ oc new-app -f ./config/app/userprofile-build.yaml \
 
 # Start the build:
 oc get istag userprofile:3.0 || oc start-build userprofile-3.0 
-oc logs bc/userprofile-3.0 -f
+oc logs bc/userprofile-3.0 -f  # was getting log streaming errors if using -F above
 
 oc describe is userprofile | grep -e ^3.0
 

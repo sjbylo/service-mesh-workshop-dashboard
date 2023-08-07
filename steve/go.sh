@@ -14,8 +14,10 @@ trap terminate_subprocesses EXIT
 
 set -e
 
-for u in {1..10}; do 
+for u in {1..20}; do 
 	echo Building images for user$u - See log file: /tmp/pre-build-images.user$u.log >&2
-	echo "./pre-build-images user$u >/tmp/pre-build-images.user$u.log 2>&1"
-done | xargs -P 5 -I {} sh -c "{}"
+	#echo "./pre-build-images user$u >/tmp/pre-build-images.user$u.log 2>&1 && echo Success user$u"
+	LF=/tmp/pre-build-images.user$u.log
+	echo "if ./pre-build-images user$u >$LF 2>&1; then echo User $u completed; else echo User $u failed; tail -5 $LF; fi"
+done | xargs -P 3 -I {} sh -c "{}"
 

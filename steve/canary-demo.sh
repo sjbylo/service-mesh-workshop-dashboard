@@ -1,11 +1,15 @@
 #!/bin/bash -ex
 # This script helps to demo canary release using a Host header.
 
+# Copy the default kubeconf which containes the creds to access the cluster as cluster-admin
+cp -p ~/.kube/config /tmp/$MY_USER.kubeconf
+export KUBECONFIG=/tmp/$MY_USER.kubeconf
+
 # log into the cluster 
 oc login -u user1 -p openshift --insecure-skip-tls-verify     
 
 # Set up the below VS in the workshop ... see below. 
-oc replace -f - <<END
+oc apply -f - <<END
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:

@@ -99,7 +99,8 @@ oc new-app -f ./config/app/userprofile-build.yaml \
 
 # This extra app takes a long time to build! 
 # Start the build:
-oc get istag userprofile:1.0 || oc start-build userprofile-1.0 -F
+oc get istag userprofile:1.0 || oc start-build userprofile-1.0 
+oc logs bc/userprofile-1.0 -f
 
 # verify image 
 oc get is userprofile -oname | grep "imagestream.image.openshift.io/userprofile"
@@ -133,7 +134,8 @@ oc new-app -f ./config/app/userprofile-build.yaml \
   -p APP_VERSION_TAG=2.0 || true
 
 # Start the build:
-oc get istag userprofile:2.0 || oc start-build userprofile-2.0 -F
+oc get istag userprofile:2.0 || oc start-build userprofile-2.0 
+oc logs bc/userprofile-2.0 -f
 
 # Verify the image was created:
 oc describe is userprofile | grep -e ^2.0 
@@ -149,7 +151,8 @@ oc new-app -f ./config/app/userprofile-build.yaml \
   -p APP_VERSION_TAG=3.0 || true
 
 # Start the build:
-oc get istag userprofile:3.0 || oc start-build userprofile-3.0 -F
+oc get istag userprofile:3.0 || oc start-build userprofile-3.0 
+oc logs bc/userprofile-3.0 -f
 
 oc describe is userprofile | grep -e ^3.0
 

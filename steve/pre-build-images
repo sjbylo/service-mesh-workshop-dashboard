@@ -98,7 +98,7 @@ oc new-app -f ./config/app/userprofile-build.yaml \
   -p APP_VERSION_TAG=1.0 || true
 
 # This extra app takes a long time to build! 
-# Start the build:
+# Start the build - this is the only way i can think of to avoid 'streaming errors'
 oc get istag userprofile:1.0 || (oc start-build userprofile-1.0; sleep 1; oc get bc/userprofile-1.0 && oc logs bc/userprofile-1.0 -f)
 
 # verify image 
@@ -132,7 +132,7 @@ oc new-app -f ./config/app/userprofile-build.yaml \
   -p APPLICATION_CODE_BRANCH=workshop-feature-update \
   -p APP_VERSION_TAG=2.0 || true
 
-# Start the build:
+# Start the build - this is the only way i can think of to avoid 'streaming errors'
 oc get istag userprofile:2.0 || (oc start-build userprofile-2.0; sleep 1; oc get bc/userprofile-2.0 && oc logs bc/userprofile-2.0 -f)
 
 # Verify the image was created:
@@ -148,7 +148,7 @@ oc new-app -f ./config/app/userprofile-build.yaml \
   -p APPLICATION_CODE_BRANCH=workshop-feature-fix \
   -p APP_VERSION_TAG=3.0 || true
 
-# Start the build:
+# Start the build - this is the only way i can think of to avoid 'streaming errors'
 oc get istag userprofile:3.0 || (oc start-build userprofile-3.0; sleep 1; oc get bc/userprofile-3.0 && oc logs bc/userprofile-3.0 -f)
 
 oc describe is userprofile | grep -e ^3.0

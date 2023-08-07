@@ -104,3 +104,7 @@ do
 	echo 
 done
 
+# Reset 
+# oc apply -f ./config/istio/destinationrules-all.yaml
+# oc apply -f ./config/istio/virtual-services-default.yaml
+

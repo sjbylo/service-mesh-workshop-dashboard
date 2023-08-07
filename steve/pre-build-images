@@ -1,0 +1,176 @@
+#!/bin/bash -ex
+# This script will build all images required for the OpenShift Service Mesh Workshop
+# https://github.com/RedHatGov/service-mesh-workshop-dashboard/ 
+
+MY_USER=$1
+[ "$MY_USER" ] || exit 1
+
+# Copy the default kubeconf which containes the creds to access the cluster as cluster-admin
+cp -p ~/.kube/config /tmp/$MY_USER.kubeconf
+export KUBECONFIG=/tmp/$MY_USER.kubeconf
+
+echo Checking if you are logged in as cluster-admin ...
+oc whoami
+oc whoami --as=$MY_USER   # This will only pass if you are logged in as cluster-admin
+
+echo Logging in as $MY_USER ...
+oc login -u $MY_USER -p openshift --insecure-skip-tls-verify || exit 1
+
+######
+# Prep
+
+rm -rf /tmp/$MY_USER && mkdir /tmp/$MY_USER && cd /tmp/$MY_USER
+
+######
+# The following is or more or less copied directly from the labs
+
+####
+#Lab 1.3 - Deploying an App into the Service Mesh
+
+git clone https://github.com/RedHatGov/service-mesh-workshop-code.git
+cd service-mesh-workshop-code && git checkout workshop-stable
+cat config/app/app-ui-fromsource.yaml | grep -B 1 sidecar.istio.io/inject.  # check
+
+oc project $MY_USER 
+
+# Better not to run these delete commands!  This script is reasoably idempotent!
+#oc delete po,bc --all  --timeout=60s   # Is this needed?
+#oc delete all --all --timeout=60s    # Is this needed?
+
+# Deploy the boards service:
+
+oc new-app -f ./config/app/boards-fromsource.yaml \
+  -p APPLICATION_NAME=boards \
+  -p NODEJS_VERSION_TAG=16-ubi8 \
+  -p GIT_URI=https://github.com/RedHatGov/service-mesh-workshop-code.git \
+  -p GIT_BRANCH=workshop-stable \
+  -p DATABASE_SERVICE_NAME=boards-mongodb \
+  -p MONGODB_DATABASE=boardsDevelopment || true
+
+# Deploy the context scraper service:
+
+oc new-app -f ./config/app/context-scraper-fromsource.yaml \
+  -p APPLICATION_NAME=context-scraper \
+  -p NODEJS_VERSION_TAG=16-ubi8 \
+  -p GIT_BRANCH=workshop-stable \
+  -p GIT_URI=https://github.com/RedHatGov/service-mesh-workshop-code.git || true
+
+# Deploy the user interface:
+
+oc new-app -f ./config/app/app-ui-fromsource.yaml \
+  -p APPLICATION_NAME=app-ui \
+  -p NODEJS_VERSION_TAG=16-ubi8 \
+  -p GIT_BRANCH=workshop-stable \
+  -p GIT_URI=https://github.com/RedHatGov/service-mesh-workshop-code.git \
+  -e FAKE_USER=true || true
+
+#Verify:
+
+set +x
+while ! oc get pods -l app=app-ui -o jsonpath='{.items[*].spec.containers[*].name}{"\n"}' | grep "app-ui istio-proxy"
+do
+	echo -n .
+	sleep 3
+done
+set -x
+
+oc create -f ./config/istio/gateway.yaml || true
+
+GATEWAY_URL=$(oc get route istio-ingressgateway -n ${MY_USER}-istio --template='http://{{.spec.host}}')
+
+set +x
+while ! curl $GATEWAY_URL | grep dashboard.css
+do
+	echo -n .
+	sleep 1
+done
+set -x
+
+####
+# Lab 2.1 - Building a Microservice
+ 
+# Create the build:
+
+oc new-app -f ./config/app/userprofile-build.yaml \
+  -p APPLICATION_NAME=userprofile \
+  -p APPLICATION_CODE_URI=https://github.com/RedHatGov/service-mesh-workshop-code.git \
+  -p APPLICATION_CODE_BRANCH=workshop-stable \
+  -p APP_VERSION_TAG=1.0 || true
+
+# This extra app takes a long time to build! 
+# Start the build:
+oc get istag userprofile:1.0 || oc start-build userprofile-1.0 -F
+
+# verify image 
+oc get is userprofile -oname | grep "imagestream.image.openshift.io/userprofile"
+
+####
+# Lab 2.2 - Adding a New Service to the Mesh
+
+# Test it runs ok
+USER_PROFILE_IMAGE_URI=$(oc get is userprofile --template='{{.status.dockerImageRepository}}')
+sed "s|%USER_PROFILE_IMAGE_URI%|$USER_PROFILE_IMAGE_URI|" ./config/app/userprofile-deploy-all.yaml | oc create -f - || true
+
+sleep 2
+
+oc get pods -l deploymentconfig=userprofile -o jsonpath='{.items[*].spec.containers[*].name}{"\n"}' | grep "userprofile istio-proxy"
+
+set +x
+while ! curl $GATEWAY_URL/profile | grep "Back to top"
+do
+	echo -n .
+	sleep 3
+done
+set -x
+
+# This will build the image needed for Lab 3.1 
+# Create a new build on this feature branch:
+
+oc new-app -f ./config/app/userprofile-build.yaml \
+  -p APPLICATION_NAME=userprofile \
+  -p APPLICATION_CODE_URI=https://github.com/RedHatGov/service-mesh-workshop-code.git \
+  -p APPLICATION_CODE_BRANCH=workshop-feature-update \
+  -p APP_VERSION_TAG=2.0 || true
+
+# Start the build:
+oc get istag userprofile:2.0 || oc start-build userprofile-2.0 -F
+
+# Verify the image was created:
+oc describe is userprofile | grep -e ^2.0 
+
+
+# This will build the image needed for Lab 4.2
+
+# Create a new build on this feature branch:
+oc new-app -f ./config/app/userprofile-build.yaml \
+  -p APPLICATION_NAME=userprofile \
+  -p APPLICATION_CODE_URI=https://github.com/RedHatGov/service-mesh-workshop-code.git \
+  -p APPLICATION_CODE_BRANCH=workshop-feature-fix \
+  -p APP_VERSION_TAG=3.0 || true
+
+# Start the build:
+oc get istag userprofile:3.0 || oc start-build userprofile-3.0 -F
+
+oc describe is userprofile | grep -e ^3.0
+
+
+# Double check these are all available 
+curl $GATEWAY_URL | grep dashboard.css
+curl $GATEWAY_URL/profile | grep "Back to top"
+oc get pods -l app=app-ui -o jsonpath='{.items[*].spec.containers[*].name}{"\n"}' | grep "app-ui istio-proxy"
+oc describe is userprofile | grep -e ^2.0 
+oc get pods -l deploymentconfig=userprofile -o jsonpath='{.items[*].spec.containers[*].name}{"\n"}' | grep "userprofile istio-proxy"
+oc describe is userprofile | grep -e ^2.0 
+oc describe is userprofile | grep -e ^3.0
+
+# Reverse these things since workshop participants will complete these 
+oc delete -f ./config/istio/gateway.yaml || true
+sed "s|%USER_PROFILE_IMAGE_URI%|$USER_PROFILE_IMAGE_URI|" ./config/app/userprofile-deploy-all.yaml | oc delete -f - --grace-period=10 || true
+
+# Clean up a bit
+oc get po | grep Completed| awk '{print $1}'| xargs -L1 oc delete po --grace-period=10  || true
+
+set +x
+echo Done for user $MY_USER 
+
+

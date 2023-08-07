@@ -79,7 +79,7 @@ oc create -f ./config/istio/gateway.yaml || true
 GATEWAY_URL=$(oc get route istio-ingressgateway -n ${MY_USER}-istio --template='http://{{.spec.host}}')
 
 set +x
-while ! curl $GATEWAY_URL | grep dashboard.css
+while ! curl -s $GATEWAY_URL | grep dashboard.css
 do
 	echo -n .
 	sleep 1
@@ -117,7 +117,7 @@ sleep 2
 oc get pods -l deploymentconfig=userprofile -o jsonpath='{.items[*].spec.containers[*].name}{"\n"}' | grep "userprofile istio-proxy"
 
 set +x
-while ! curl $GATEWAY_URL/profile | grep "Back to top"
+while ! curl -s $GATEWAY_URL/profile | grep "Back to top"
 do
 	echo -n .
 	sleep 3
@@ -158,8 +158,8 @@ oc describe is userprofile | grep -e ^3.0
 
 
 # Double check these are all available 
-curl $GATEWAY_URL | grep dashboard.css
-curl $GATEWAY_URL/profile | grep "Back to top"
+curl -s $GATEWAY_URL | grep dashboard.css
+curl -s $GATEWAY_URL/profile | grep "Back to top"
 oc get pods -l app=app-ui -o jsonpath='{.items[*].spec.containers[*].name}{"\n"}' | grep "app-ui istio-proxy"
 oc describe is userprofile | grep -e ^2.0 
 oc get pods -l deploymentconfig=userprofile -o jsonpath='{.items[*].spec.containers[*].name}{"\n"}' | grep "userprofile istio-proxy"

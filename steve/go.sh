@@ -23,7 +23,7 @@ set -e
 
 u=1
 #for u in {1..20}; do 
-for u in $(seq 1 $COUNT)
+for u in $(seq 1 $COUNT); do
 	echo Building images for user$u - See log file: /tmp/pre-build-images.user$u.log >&2
 	LF=/tmp/pre-build-images.user$u.log
 	echo "if ./pre-build-images user$u >$LF 2>&1; then echo User $u completed; else echo User $u failed; tail -5 $LF; fi"

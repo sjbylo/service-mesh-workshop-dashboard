@@ -100,7 +100,7 @@ oc new-app -f ./config/app/userprofile-build.yaml \
 # This extra app takes a long time to build! 
 # Start the build - this is the only way i can think of to avoid 'streaming errors'
 #oc get istag userprofile:1.0 || (oc start-build userprofile-1.0; sleep 3; oc get bc/userprofile-1.0 && oc logs bc/userprofile-1.0 -f)
-V=1.0; until oc get istag userprofile:$V; do oc start-build userprofile-$V -f; sleep 1; done
+V=1.0; until oc get istag userprofile:$V; do oc start-build userprofile-$V -F; sleep 1; done
 
 # verify image 
 oc get is userprofile -oname | grep "imagestream.image.openshift.io/userprofile"
@@ -135,7 +135,7 @@ oc new-app -f ./config/app/userprofile-build.yaml \
 
 # Start the build - this is the only way i can think of to avoid 'streaming errors'
 #oc get istag userprofile:2.0 || (oc start-build userprofile-2.0; sleep 3; oc get bc/userprofile-2.0 && oc logs bc/userprofile-2.0 -f)
-V=2.0; until oc get istag userprofile:$V; do oc start-build userprofile-$V -f; sleep 1; done
+V=2.0; until oc get istag userprofile:$V; do oc start-build userprofile-$V -F; sleep 1; done
 
 # Verify the image was created:
 oc describe is userprofile | grep -e ^2.0 
@@ -152,7 +152,7 @@ oc new-app -f ./config/app/userprofile-build.yaml \
 
 # Start the build - this is the only way i can think of to avoid 'streaming errors'
 #oc get istag userprofile:3.0 || (oc start-build userprofile-3.0; sleep 3; oc get bc/userprofile-3.0 && oc logs bc/userprofile-3.0 -f)
-V=3.0; until oc get istag userprofile:$V; do oc start-build userprofile-$V -f; sleep 1; done
+V=3.0; until oc get istag userprofile:$V; do oc start-build userprofile-$V -F; sleep 1; done
 
 oc describe is userprofile | grep -e ^3.0
 

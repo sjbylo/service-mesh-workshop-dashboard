@@ -1,4 +1,5 @@
 #!/bin/bash -ex
+# ./go.sh calls this script
 # This script will build all images required for the OpenShift Service Mesh Workshop
 # https://github.com/RedHatGov/service-mesh-workshop-dashboard/ 
 
